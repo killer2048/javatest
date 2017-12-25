@@ -1,7 +1,4 @@
 package com.killer2048.usermanger.user;
-
-import java.util.Scanner;
-
 public interface UserI {
 
 	void showMenu();//显示自己的菜单

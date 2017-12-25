@@ -3,6 +3,7 @@ package com.killer2048.usermanger;
 import java.sql.*;
 import java.util.*;
 import com.killer2048.usermanger.user.*;
+import com.killer2048.usermanger.util.Tools;
 
 public class Main {
 //主功能类

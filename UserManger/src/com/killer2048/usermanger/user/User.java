@@ -4,7 +4,8 @@ import java.sql.SQLException;
 import java.util.Scanner;
 
 import com.killer2048.usermanger.Main;
-import com.killer2048.usermanger.Tools;
+import com.killer2048.usermanger.util.Input;
+import com.killer2048.usermanger.util.Tools;
 
 public class User implements UserI {
 	// 普通用户信息类
@@ -44,28 +45,25 @@ public class User implements UserI {
 		String pw;
 		String mail;
 		while(true) {
-			System.out.println("请输入用户名");
-			name = sc.next();
-			if(Tools.checkName(name)) {
+			name = Input.getName(sc);
+			if(name!=null) {
 				break;
 			}
-			Tools.inputCheckFalse();
+			Input.inputCheckFalse();
 		}
 		while(true) {
-			System.out.println("请输入密码");
-			pw = sc.next();
-			if(Tools.checkPW(pw)) {
+			pw = Input.getPw(sc);
+			if(pw!=null) {
 				break;
 			}
-			Tools.inputCheckFalse();
+			Input.inputCheckFalse();
 		}
 		while(true) {
-			System.out.println("请输入邮箱");
-			mail = sc.next();
-			if(Tools.checkMail(mail)) {
+			mail = Input.getMail(sc);
+			if(mail!=null) {
 				break;
 			}
-			Tools.inputCheckFalse();
+			Input.inputCheckFalse();
 		}
 		this.name=name;
 		this.email=mail;
@@ -108,7 +106,7 @@ public class User implements UserI {
 			if(Tools.isNumeric(in)) {
 				input=Integer.parseInt(in);
 			} else {
-				Tools.wrongInput();
+				Input.wrongInput();
 				showMenu();
 				continue;
 			}
@@ -126,7 +124,7 @@ public class User implements UserI {
 				//注销
 				return;
 			default:
-				Tools.wrongInput();
+				Input.wrongInput();
 				showMenu();
 			}
 		}
