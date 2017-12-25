@@ -107,13 +107,13 @@ public class User implements UserI {
 				input=Integer.parseInt(in);
 			} else {
 				Input.wrongInput();
-				showMenu();
 				continue;
 			}
 			switch (input) {
 			case 1:
 				Tools.horizontalLine();
 				System.out.println("你现在的信息是：");
+				showInfo();
 				changeInfo();
 				break;
 			case 2:

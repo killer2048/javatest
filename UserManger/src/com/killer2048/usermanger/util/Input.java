@@ -32,7 +32,6 @@ public class Input {
     public static void wrongInput() {
 		Tools.horizontalLine();
 		System.out.println("您的输入有误");
-		Tools.horizontalLine();
 	}
 
 	// 输入检查
