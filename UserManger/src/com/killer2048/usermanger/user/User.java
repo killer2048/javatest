@@ -1,19 +1,19 @@
 package com.killer2048.usermanger.user;
 
 import java.sql.SQLException;
-import java.util.Scanner;
-
 import com.killer2048.usermanger.Main;
+import com.killer2048.usermanger.sql.WithPreparedStatement;
 import com.killer2048.usermanger.util.Input;
 import com.killer2048.usermanger.util.Tools;
 
 public class User implements UserI {
 	// 普通用户信息类
-	private int id;
-	private String name;
-	private String email;
-	private String pw;
-	private int rights;
+	protected int id;
+	protected String name;
+	protected String email;
+	protected String pw;
+	protected int rights;
+
 
 	public User(int id, String name, String email, String pw, int rights) {
 		this.id = id;
@@ -21,6 +21,26 @@ public class User implements UserI {
 		this.email = email;
 		this.pw = pw;
 		this.rights = rights;
+	}
+
+	public int getRights() {
+		return rights;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public String getPw() {
+		return pw;
 	}
 
 	@Override
@@ -34,81 +54,118 @@ public class User implements UserI {
 
 	@Override
 	public void showInfo() {
-		System.out.println(id+"    "+name+"    "+email+"    "+Main.getInstance().getRightList().get(Integer.valueOf(rights)));
+		System.out.println(id + "    " + name + "    " + email + "    "
+				+ Main.getInstance().getRightList().get(Integer.valueOf(rights)));
+
+	}
+
+	@Override
+	public void changeInfo(String name, String mail, String pw, int rights, UserI user) {
+		// 修改权限检查
+		if (user != this) {
+			// 不是本人的修改
+			if (!(user instanceof User) || user == null) {
+				notAllow();
+				return;
+			}
+			user = (User) user;
+			if (user.getRights() <= Main.USERLEVEL || user.getRights() < this.rights) {
+				notAllow();
+				return;
+			}
+		}
+		this.name = name;
+		this.email = mail;
+		this.pw = pw;
+		this.rights = rights;
+		int ret = changeInfoSql(name, mail, pw, rights);
+		if (ret > 0) {
+			System.out.println("修改成功");
+		} else {
+			System.out.println("修改失败");
+		}
 
 	}
 
 	@Override
 	public void changeInfo() {
-		Scanner sc = Main.getInstance().sc;
-		String name;
-		String pw;
-		String mail;
-		while(true) {
-			name = Input.getName(sc);
-			if(name!=null) {
+		String name=null;
+		String pw=null;
+		String mail=null;
+		while (true) {
+			name = Input.getName();
+			if (name != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
-		while(true) {
-			pw = Input.getPw(sc);
-			if(pw!=null) {
+		while (true) {
+			pw = Input.getPw();
+			if (pw != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
-		while(true) {
-			mail = Input.getMail(sc);
-			if(mail!=null) {
+		while (true) {
+			mail = Input.getMail();
+			if (mail != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
-		this.name=name;
-		this.email=mail;
-		this.pw=pw;
+		changeInfo(name, mail, pw, this.rights, this);
+
+	}
+
+	protected void notAllow() {
+		System.out.println("您的权限不足");
+	}
+
+	// protected String changeInfoSql(String name,String email,String pw) {
+	// StringBuilder sb = new StringBuilder();
+	// sb.append("update users set name='");
+	// sb.append(name);
+	// sb.append("',email='");
+	// sb.append(email);
+	// sb.append("',password='");
+	// sb.append(pw);
+	// sb.append("' where id=");
+	// sb.append(id);
+	// return sb.toString();
+	// }
+	protected int changeInfoSql(String name, String email, String pw, int rights) {
+		int ret = 0;
+		WithPreparedStatement sql = null;
 		try {
-			if(Main.getInstance().update(changeInfoSql(name, mail, pw)) >0) {
-				System.out.println("修改成功");
-			} else {
-				System.out.println("修改失败");
-			}
+			sql = new WithPreparedStatement(Main.getInstance().getConn().prepareStatement("update users set name= ? ,email= ? ,password= ? ,rights= ? where id= ?"));
+			sql.set(1, name);
+			sql.set(2, email);
+			sql.set(3, pw);
+			sql.set(4, rights);
+			sql.set(5, this.id);
+			ret = sql.update();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			if(sql!=null) {
+				try {
+					sql.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
-
+		return ret;
 	}
-	protected String changeInfoSql(String name,String email,String pw) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("update users set name='");
-		sb.append(name);
-		sb.append("',email='");
-		sb.append(email);
-		sb.append("',password='");
-		sb.append(pw);
-		sb.append("' where id=");
-		sb.append(id);
-		return sb.toString();
-	}
-	
-	
 
 	@Override
 	public void getOperation() {
-		while(true) {
-			//二级循环，登陆成功
+		while (true) {
+			// 二级循环，登陆成功
 			showMenu();
-			Scanner sc = Main.getInstance().sc;
-			String in = sc.next();
-			int input;
-			if(Tools.isNumeric(in)) {
-				input=Integer.parseInt(in);
-			} else {
-				Input.wrongInput();
-				continue;
-			}
+			int input = Input.getInt();
 			switch (input) {
 			case 1:
 				Tools.horizontalLine();
@@ -120,12 +177,11 @@ public class User implements UserI {
 				showInfo();
 				break;
 			case 3:
-				//TODO:退出？注销？
-				//注销
+				// TODO:退出？注销？
+				// 注销
 				return;
 			default:
 				Input.wrongInput();
-				showMenu();
 			}
 		}
 	}
@@ -133,10 +189,11 @@ public class User implements UserI {
 	@Override
 	public void sayHello() {
 		System.out.println("欢迎登录主窗体");
-		System.out.println(name+"你好：                      你的权限是：    "+Main.getInstance().getRightList().get(Integer.valueOf(rights)));
-		
+		System.out.println(name + "你好：                      你的权限是：    "
+				+ Main.getInstance().getRightList().get(Integer.valueOf(rights)));
+
 	}
+
 	
-	
-	
+
 }

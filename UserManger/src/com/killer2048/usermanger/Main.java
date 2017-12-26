@@ -4,17 +4,18 @@ import java.sql.*;
 import java.util.*;
 
 import com.killer2048.usermanger.login.Login;
+import com.killer2048.usermanger.sql.WithStatement;
 import com.killer2048.usermanger.user.*;
 import com.killer2048.usermanger.util.Input;
 import com.killer2048.usermanger.util.Tools;
 
 public class Main {
 //主功能类
+	public static final int USERLEVEL = 1;//注册时的默认权限
 	//jdbc对象
-	public  Scanner sc;
-	public  User curruser;
+	public  UserI curruser;
 	private  Connection conn;
-	private  Statement st;
+	private Statement st;
 	private  Map<Integer,String> rightList;
 	private static Main m = new Main();
 	
@@ -25,6 +26,12 @@ public class Main {
 		return m;
 	}
 	
+	public Connection getConn() {
+		return conn;
+	}
+	public Statement getStatement() {
+		return st;
+	}
 	public Map<Integer, String> getRightList() {
 		return rightList;
 	}
@@ -64,15 +71,7 @@ public class Main {
 		while(true) {
 			//循环，主菜单选择
 			showMenu();
-			Scanner sc = Main.getInstance().sc;
-			String in = sc.next();
-			int input;
-			if(Tools.isNumeric(in)) {
-				input=Integer.parseInt(in);
-			} else {
-				Input.wrongInput();
-				continue;
-			}
+			int input = Input.getInt();
 			switch (input) {
 			case 1:
 				try {
@@ -112,7 +111,6 @@ public class Main {
 				exit();
 			default:
 				Input.wrongInput();
-				showMenu();
 			}
 			//主循环一圈结束注销用户（该用户的所有操作完成，回到登录）
 			Main.getInstance().logout();
@@ -124,10 +122,9 @@ public class Main {
 		//数据库对象
 		Class.forName("oracle.jdbc.driver.OracleDriver");
 		conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:orcl", "scott", "tiger");
-		sc = new Scanner(System.in);
 		st = conn.createStatement();
 		//获取权限列表
-		ResultSet rt = query("select id,text from rights");
+		ResultSet rt = WithStatement.query("select id,text from rights");
 		Map<Integer,String> rlist = new HashMap<>();
 		while(rt.next()) {
 			rlist.put(Integer.valueOf(rt.getString("id")),rt.getString("text"));
@@ -144,49 +141,14 @@ public class Main {
 	
 	/*调试用*/
 	public void test() {
-//		Tools.horizontalLine();
-//		System.out.println("修改自己的信息 -----------------1");
-//		System.out.println("查询自己的信息 -----------------2");
-//		System.out.println("程序退出-----------------------1");
-//		System.out.println(changeInfoSql("ddd","fdfa' where i=1 --sf@dsfadf.dfas","hehe"));
-//System.out.println("USERS_ID_AUTOINCREASE.NEXTVAL".toLowerCase());
-		System.out.println(getRegSql("fgsadfg", "dfasfd", "63546", 656));
-		
+		System.out.println(Input.rightsString(rightList,2));;
 		
 	}
-	private String getRegSql(String name,String mail,String pw,int rights) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("insert into users (id,name,email,password,rights) values (users_id_autoincrease.nextval,'");
-		sb.append(name);
-		sb.append("','");
-		sb.append(mail);
-		sb.append("','");
-		sb.append(pw);
-		sb.append("',");
-		sb.append(rights);
-		sb.append(")");
-		return sb.toString();
-	}
-	public static String changeInfoSql(String name,String email,String pw) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("update users set name='");
-		sb.append(name);
-		sb.append("',email='");
-		sb.append(email);
-		sb.append("',password='");
-		sb.append(pw);
-		sb.append("' where id=");
-		sb.append(100);
-		return sb.toString();
-	}
-	
+
 	
 	/*调试用 end*/
 	public void exit() {
-		if(sc!=null) {
-			sc.close();
-		}
-		if(st!=null) {
+		if(st != null) {
 			try {
 				st.close();
 			} catch (SQLException e) {
@@ -206,14 +168,22 @@ public class Main {
 		System.exit(0);
 	}
 	
-	public ResultSet query(String sql) throws SQLException {
-		return st.executeQuery(sql);
-		 
-	}
-	
-	public int update(String sql) throws SQLException {
-		return st.executeUpdate(sql);
-	}
+//	public ResultSet query(String sql) throws SQLException {
+//		return st.executeQuery(sql);
+//		 
+//	}
+//	public ResultSet query(PreparedStatement sql) throws SQLException {
+//		return sql.executeQuery();
+//		 
+//	}
+//	
+//	public int update(String sql) throws SQLException {
+//		return st.executeUpdate(sql);
+//	}
+//	
+//	public int update(PreparedStatement sql) throws SQLException {
+//		return sql.executeUpdate();
+//	}
 	
 	
 }

@@ -2,38 +2,37 @@ package com.killer2048.usermanger.login;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Scanner;
 import com.killer2048.usermanger.Main;
+import com.killer2048.usermanger.sql.WithPreparedStatement;
 import com.killer2048.usermanger.user.*;
 import com.killer2048.usermanger.util.*;
 
 public class Login {
-	User user;
-
-	public User login() throws SQLException {
+	UserI user;
+	public UserI login() throws SQLException {
 		// 获取相同的用户名的记录，之后比对密码
 		System.out.println("用户登录主界面");
 		Tools.horizontalLine();
-		Scanner sc = Main.getInstance().sc;
-		String name;
-		String pw;
+		String name=null;
+		String pw=null;
 		user = null;// 每次登录时重置user
 		while (true) {
-			name = Input.getName(sc);
+			name = Input.getName();
 			if (name != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
 		while (true) {
-			pw = Input.getPw(sc);
+			pw = Input.getPw();
 			if (pw != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
 		ResultSet rs = null;
-		rs = Main.getInstance().query(createLoginSql(name));
+		WithPreparedStatement sql = createLoginSql(name);
+		rs = sql.query();
 		if (rs.next()) {
 			// 检查密码
 			String password = rs.getString("password");
@@ -45,6 +44,7 @@ public class Login {
 				user = getRights(id, name, mail, password, rights);
 			}
 		}
+		sql.close();
 		if (rs != null) {
 			rs.close();
 		}
@@ -52,7 +52,7 @@ public class Login {
 
 	}
 
-	private User getRights(int id, String name, String mail, String pw, int rights) {
+	private UserI getRights(int id, String name, String mail, String pw, int rights) {
 		// 根据权限返回对应的实例
 		switch (rights) {
 		case 1:
@@ -68,88 +68,77 @@ public class Login {
 
 	}
 
-	private String createLoginSql(String name) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("select id,name,email,password,rights from users where name='");
-		sb.append(name);
-		sb.append("'");
-		return sb.toString();
+//	private String createLoginSql(String name) {
+//		
+//		StringBuilder sb = new StringBuilder();
+//		sb.append("select id,name,email,password,rights from users where name='");
+//		sb.append(name);
+//		sb.append("'");
+//		return sb.toString();
+//	}
+	private WithPreparedStatement createLoginSql(String name) throws SQLException {
+		WithPreparedStatement loginPs = new WithPreparedStatement(Main.getInstance().getConn().prepareStatement("select id,name,email,password,rights from users where name= ?"));
+		loginPs.set(1, name);
+		return loginPs;
 	}
 
 	public boolean regist() throws SQLException {
-		Scanner sc = Main.getInstance().sc;
-		String name;
-		String pw;
-		String mail;
+		String name=null;
+		String pw=null;
+		String mail=null;
 		while (true) {
-			name = Input.getName(sc);
+			name = Input.getName();
 			if (name != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
 		while (true) {
-			pw = Input.getPw(sc);
+			pw = Input.getPw();
 			if (pw != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
 		while (true) {
-			mail = Input.getMail(sc);
+			mail = Input.getMail();
 			if (mail != null) {
 				break;
 			}
 			Input.inputCheckFalse();
 		}
-		if (checkNameUsed(name)) {
+		if (Tools.checkNameUsed(name)) {
 			System.out.println("用户名已被使用");
 			return false;
 		}
 
-		String sql = getRegSql(name, mail, pw);
-		int ret = Main.getInstance().update(sql);
+		WithPreparedStatement sql = getRegSql(name, mail, pw);
+		int ret = sql.update();
+		sql.close();
 		if (ret > 0) {
 			return true;
 		}
 		return false;
 	}
 
-	private String getRegSql(String name, String mail, String pw) {
-		return getRegSql(name, mail, pw, 1);// 默认权限为1
+
+	
+	private WithPreparedStatement getRegSql(String name, String mail, String pw) throws SQLException {
+		return getRegSql(name, mail, pw, Main.USERLEVEL);
+	}
+	
+	private WithPreparedStatement getRegSql(String name, String mail, String pw, int rights) throws SQLException {
+		WithPreparedStatement regPs = new WithPreparedStatement(Main.getInstance().getConn().prepareStatement("insert into users (id,name,email,password,rights) values (users_id_autoincrease.nextval,?,?,?,?)"));
+		regPs.set(1, name);
+		regPs.set(2, mail);
+		regPs.set(3, pw);
+		regPs.set(4, rights);
+		return regPs;
 	}
 
-	private String getRegSql(String name, String mail, String pw, int rights) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("insert into users (id,name,email,password,rights) values (users_id_autoincrease.nextval,'");
-		sb.append(name);
-		sb.append("','");
-		sb.append(mail);
-		sb.append("','");
-		sb.append(pw);
-		sb.append("',");
-		sb.append(rights);
-		sb.append(")");
-		return sb.toString();
-	}
+	
 
-	// 检查用户名是否被使用
-	private boolean checkNameUsed(String name) throws SQLException {
-		int count = 1;
-		ResultSet rs = null;
-		rs = Main.getInstance().query("select count(id) as count from users where name='" + name + "'");
-		if (rs.next()) {
-			count = rs.getInt("count");
-		}
-		rs.close();
-
-		if (count == 0) {
-			return false;
-		}
-		return true;
-	}
-
-	public void loginSuccess(User user) {
+	public void loginSuccess(UserI user) {
 		// 登录成功
 		user.sayHello();
 		user.getOperation();
